@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Friend Finder - Survey</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery.js"></script>\
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }       
+        label {
+            display: block;
+        }
+        ul {
+            list-style-type: none;
+        }
+        .form {
+            width: 95%;
+            max-width: 700px;
+            margin: auto;
+        }
+        .modal-backdrop {
+            opacity: 0.4 !important;
+        }
+        .friends-img {
+            height: 225px;
+            width: 200px;
+        }
+        .friend-img {
+            height: 225px;
+            width: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrapper" class="mt-3">
+        <form class="form jumbotron">
+            <h2>Tell Us A Little About Yourself!</h2>
+        <div class="form-group">
+            <input id="name-txt" class="form-control mb-2" type="text" placeholder="Name">
+            <input id="photo-txt" class="form-control mb-2" type="text" placeholder="Image link">
+        <!-- Survey Questions -->
+        <div class="row">
+        <div class="col col-md-6">
+            <ul id="survey-ul1"></ul>
+        </div>
+        <div class="col col-md-6">
+        <ul id="survey-ul2"></ul>
+        </div>
+        </div>
+    <div="row">
+        <div class="col col-sm-12 text-center">
+            <button id='submit-btn' class="btn btn-primary btn-lg">Submit</button>
+        </div>
+    </div>
+        </div>
+    </div>
+    </form>
+    <div class="modal" id="match-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Best Match</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body text-center">
+            <h2 id="friend-header"></h2>
+            <img id="friend-img" src="" alt="Match Image">
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+        </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        let $friendHeader = $("#friend-header");
+        let $friendImg = $("#friend-img");
+        let $modal = $("#match-modal");
+        let $surveyUl1 = $("#survey-ul1");
+        let $surveyUl2 = $("#survey-ul2");
+        let questions = ['I am outgoing', 'I like spending time outdoors', 'I like watching shows(especially Stranger Things)', 'I have more energy in the morning',
+         'I like pets (dogs and demodogs)', 'I prefer to text rather than call', 'I love going to concerts', 'I like to cook', 'I like to play sports', 'I like to joke around'];
+        
+         for (let i = 0; i < questions.length; i++) {
+            let li = $("<li>");
+            li.addClass("mb-4");
+            let label = $("<label>");
+            label.addClass("font-weight-bold");
+            label.text(questions[i]);
+            label.appendTo(li);
+            let select = $("<select>");
+            select.attr("id", "q" +  parseInt(i + 1));
+            let firstOption = $("<option>");
+            firstOption.text('Select an Option');
+            select.append(firstOption);
+            for (let j = 5; j > 0; j--) {
+                let option = $("<option>");
+                option.val(j);
+                if (j === 5) {
+                    option.text(j + " (Strongly Agree)");
+                } else if (j === 1) {
+                    option.text(j + " (Strongly Disagree)");
+                } else {
+                    option.text(j);
+                }
+                select.append(option);
+            }
+            li.append(select);
+            if (i < 5) {
+                $surveyUl1.append(li);
+            } else {
+                $surveyUl2.append(li);
+            }
+        }
+        $("#name-txt").focus()
+        $('#submit-btn').on('click', function (e) {
+            e.preventDefault();
+            let friend = {};
+            let responses = [];
+            friend.name = $('#name-txt').val();
+            friend.photo = $("#photo-txt").val();
+            let answers = $('select');
+            for (let i = 0; i < answers.length; i++) {
+                responses.push(parseInt(answers[i].value));
+            }        
+            if (friend.name === null || friend.name === "") {
+                alert("Please Enter Your Name.");
+            } else if (isNaN(responses.reduce((t, v) => t += v))) {
+                alert("Please Answer All Questions.");
+            } else {
+                friend.responses = responses;
+                $.post("/api/friends", friend, function (res) {
+                    if (res) {
+                        //Display response to user
+                        if (res.photo) {
+                            $friendImg.removeClass("friends-img");
+                            $friendImg.addClass("friend-img");
+                            $friendImg.attr("src", res.photo);
+                        } else if (res.image) {
+                            $friendImg.removeClass("friend-img");
+                            $friendImg.addClass("friends-img");
+                            $friendImg.attr("src", res.image);
+                        }
+                        $friendHeader.text(res.name);
+                        $modal.modal("show");
+                    }
+                })
+            }
+        })
+    </script>
+    <footer class="footer">
+            <div class="container">
+              <p><a href="/api/friends">API Friends List</a> | <a href="https://github.com/svcoverman/friendfinder">GitHub Repo</a> | <a href="/survey"> Try Again</p>
+            </div>
+    </footer>
+</body>
+
+</html>
